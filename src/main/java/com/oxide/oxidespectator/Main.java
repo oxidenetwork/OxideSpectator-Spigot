@@ -21,6 +21,10 @@ public class Main extends JavaPlugin {
     private HashMap<UUID, Location> playerOldLocation = new HashMap<>();
     private File file;
 
+    public static Boolean inArea(Location location, Area area) {
+        return location.getX() > area.getX_min() && location.getX() < area.getX_max() && location.getZ() > area.getZ_min() && location.getZ() < area.getZ_max();
+    }
+
     public void onEnable() {
         plugin = this;
 
@@ -59,10 +63,10 @@ public class Main extends JavaPlugin {
                     for (UUID uuids : playerOldLocation.keySet()) {
                         Player player = Bukkit.getPlayer(uuids);
                         Area area = new Area(playerOldLocation.get(uuids), plugin.getConfig().getDouble("area.size"));
-                        if (!Bukkit.getOnlinePlayers().contains(player) || player.getLocation().getX() > area.getX_min()
-                                && player.getLocation().getX() < area.getX_max() && player.getLocation().getZ() > area.getZ_min()
-                                && player.getLocation().getZ() < area.getZ_max() || !player.getGameMode().equals(GameMode.SPECTATOR))
+                        if (!Bukkit.getOnlinePlayers().contains(player) || inArea(player.getLocation(), area) || !player.getGameMode().equals(GameMode.SPECTATOR))
                             continue;
+
+                        player.sendMessage("You hit the border teleporting you back");
                         player.teleport(playerOldLocation.get(uuids));
                     }
                 }
