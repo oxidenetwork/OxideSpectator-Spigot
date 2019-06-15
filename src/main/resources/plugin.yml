@@ -1,0 +1,8 @@
+name: OxideSpectator
+version: @version@
+main: com.oxide.oxidespectator.Main
+api-version: 1.14
+commands:
+  spectator:
+    description: Allow you to have access to spectator
+    usage: /spectator <area> [size]
