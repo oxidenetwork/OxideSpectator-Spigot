@@ -7,6 +7,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -15,7 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class Main extends JavaPlugin {
+public class Main extends JavaPlugin implements Listener {
     private static Main plugin;
     private HashMap<UUID, Location> playerOldLocation = new HashMap<>();
     private File file;
@@ -26,7 +28,7 @@ public class Main extends JavaPlugin {
 
     public void onEnable() {
         plugin = this;
-
+        this.getServer().getPluginManager().registerEvents(this, plugin);
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
         }
@@ -65,13 +67,29 @@ public class Main extends JavaPlugin {
                         if (!Bukkit.getOnlinePlayers().contains(player) || inArea(player.getLocation(), area) || !player.getGameMode().equals(GameMode.SPECTATOR))
                             continue;
 
-                        player.sendMessage("You hit the border teleporting you back");
+                        player.sendMessage("You went past the border teleporting you back");
                         player.teleport(playerOldLocation.get(uuids));
                     }
                 }
 
             }
         }.runTaskTimer(plugin, 0L, 20L);
+    }
+
+    @EventHandler
+    public void playermove(PlayerMoveEvent event) {
+        if (!playerOldLocation.isEmpty()) {
+            for (UUID uuids : playerOldLocation.keySet()) {
+                Player player = Bukkit.getPlayer(uuids);
+                Area area = new Area(playerOldLocation.get(uuids), plugin.getConfig().getDouble("area.size"));
+                if (!inArea(player.getLocation(), area)) {
+                    event.setCancelled(true);
+                    player.teleport(playerOldLocation.get(uuids));
+                    player.sendMessage("You have hit the Spectator border");
+                }
+//                player.teleport(playerOldLocation.get(uuids));
+            }
+        }
     }
 
     public void onDisable() {
@@ -157,7 +175,7 @@ public class Main extends JavaPlugin {
 
     @EventHandler
     public void onTeleport(PlayerTeleportEvent event) {
-        if (event.getCause().equals(PlayerTeleportEvent.TeleportCause.SPECTATE)) {
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.SPECTATE) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(ChatColor.RED + "Sorry, but you can't do that!");
         }
